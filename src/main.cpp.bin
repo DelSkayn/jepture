@@ -1,0 +1,17 @@
+#include "jepture.hpp"
+#include "profile.hpp"
+
+#include<iostream>
+#include <chrono>
+
+using namespace std::chrono;
+using namespace std;
+
+int main(){
+    JpegStream stream({ {0,"left"}, {1, "right"}}, {1920,1080}, 30.0, "data");
+
+    for(int i = 0;i < 200;i++){
+        std::cout << i << "\r" << std::flush;
+        stream.next();
+    }
+}
