@@ -54,4 +54,17 @@ for i in range(20):
     cv2.imshow("Jepture image",frames[0].array);
 ```
 
+### Multiple cameras
 
+Jepture supports as many cameras as you want. 
+```python
+import cv2
+from jepture import JpegStream
+
+stream = NumpyStream([(0,"left"),(1,"right")],resolution=(1920,1080),fps=3.0)
+
+for i in range(20):
+    frames = stream.next()
+    cv2.imshow("Left image",frames[0].array);
+    cv2.imshow("Right image",frames[1].array);
+```
