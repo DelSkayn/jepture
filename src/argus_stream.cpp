@@ -29,7 +29,11 @@ uint32_t select_sensor_mode(std::vector<SensorMode*> & sensor_modes, float fps){
     throw std::runtime_error("Could not find a sensor mode which supports requested fps");
 }
 
-ArgusStream::ArgusStream(std::vector<std::tuple<uint32_t,std::string> > cameras, std::pair<uint32_t,uint32_t> resolution, float fps){
+ArgusStream::ArgusStream(
+        std::vector<std::tuple<uint32_t,std::string> > cameras, 
+        std::pair<uint32_t,uint32_t> resolution, 
+        float fps,
+        std::optional<uint32_t> mode){
     this->resolution = Size2D<uint32_t>(resolution.first,resolution.second);
     this->fps = fps;
     this->provider.reset(CameraProvider::create());
@@ -100,7 +104,12 @@ ArgusStream::ArgusStream(std::vector<std::tuple<uint32_t,std::string> > cameras,
         sensor_modes.clear();
         i_camera_prop->getBasicSensorModes(&sensor_modes);
 
-        auto cur_sensor_mode = select_sensor_mode(sensor_modes,fps);
+        uint32_t cur_sensor_mode;
+        if (mode){
+            cur_sensor_mode = *mode;
+        }else{
+            cur_sensor_mode = select_sensor_mode(sensor_modes,fps);
+        }
         if (sensor_mode != std::numeric_limits<uint32_t>::max() && cur_sensor_mode != sensor_mode){
             throw std::runtime_error("Cameras can not agree on an sensor mode");
         }
@@ -204,48 +213,3 @@ std::vector<ArgusStreamOutput> ArgusStream::next(bool skip){
     return res;
 }
 
-JpegStream::JpegStream(std::vector<std::tuple<uint32_t,std::string> > cameras, std::pair<uint32_t,uint32_t> resolution, float fps, std::string directory)
-    : ArgusStream(cameras,resolution,fps),
-    nv(NvJPEGEncoder::createJPEGEncoder("nvjpegjepture"))
-{
-    for(uint32_t i = 0;i < this->cameras.size();i++){
-        fs::path new_dir(directory);
-        this->directories.push_back(new_dir / this->cameras[i]->name);
-        fs::create_directories(this->directories[i]);
-    }
-    this->jpeg_buffer_size = this->resolution.width() * this->resolution.height() * 3 / 2;
-    this->jpeg_buffer = new unsigned char[this->jpeg_buffer_size];
-}
-
-std::vector<JpegStreamOutput> JpegStream::next(bool skip = false){
-    auto frames = ArgusStream::next(skip);
-    std::vector<JpegStreamOutput> res;
-    for(uint32_t i = 0;i < this->cameras.size();i++){
-        unsigned long buffer_size = this->jpeg_buffer_size;
-        auto ret = this->nv->encodeFromFd(frames[i].dma_buffer, JCS_YCbCr, &this->jpeg_buffer,buffer_size,90);
-        if(ret < 0){
-            throw std::runtime_error("failed to encode jpeg");
-        }
-        if(buffer_size > this->jpeg_buffer_size){
-            this->jpeg_buffer_size = buffer_size;
-        }
-        if(!skip){
-            std::string file_name(std::to_string(frames[i].number));
-            file_name.append(".jpeg");
-            std::fstream s(this->directories[i] / file_name, s.binary | s.trunc | s.out);
-            s.write((char *)this->jpeg_buffer,buffer_size);
-            s.flush();
-            s.close();
-        }
-
-        res.push_back({
-                frames[i].number,
-                frames[i].time_stamp,
-        });
-    }
-    return res;
-}
-
-JpegStream::~JpegStream(){
-    delete[] this->jpeg_buffer;
-}

@@ -1,4 +1,4 @@
-python_example Documentation
+jepture Documentation
 ============================
 
 Contents:
@@ -6,5 +6,4 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   python_example
-
+   jepture
