@@ -13,7 +13,7 @@ Setup
 -----
 
 ```
-git clone https://github.com/Delskayn/jepture
+git clone https://github.com/DelSkayn/jepture.git
 cd jepture
 pip install ./
 ```
