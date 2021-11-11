@@ -31,7 +31,7 @@ Cameras are identiefied with a unique incrementing id. The id is assigned by lib
 ```python
 from jepture import JpegStream
 
-stream = JpegStream([(0,"camera")],resolution=(1920,1080),fps=10.0,mode=None,data_dir="./data")
+stream = JpegStream([(0,"camera")],resolution=(1920,1080),fps=10.0,mode=0,data_dir="./data")
 
 for i in range(20):
     frames = stream.next()
@@ -42,11 +42,12 @@ for i in range(20):
 
 In this example we capture images to numpy arrays. The stream returns numpy arrays of shape (1080,1920,4) in the 
 BGRA format for compatibility with opencv.
+The mode parameter can be ommited and the implementation will select a mode based on the requested fps.
 ```python
 import cv2
-from jepture import JpegStream
+from jepture import NumpyStream
 
-stream = NumpyStream([(0,"camera")],resolution=(1920,1080),fps=10.0,mode=None)
+stream = NumpyStream([(0,"camera")],resolution=(1920,1080),fps=10.0)
 
 for i in range(20):
     frames = stream.next()
@@ -59,9 +60,9 @@ for i in range(20):
 Jepture supports as many cameras as you want. 
 ```python
 import cv2
-from jepture import JpegStream
+from jepture import NumpyStream
 
-stream = NumpyStream([(0,"left"),(1,"right")],resolution=(1920,1080),fps=3.0,mode=None)
+stream = NumpyStream([(0,"left"),(1,"right")],resolution=(1920,1080),fps=3.0)
 
 for i in range(20):
     frames = stream.next()
