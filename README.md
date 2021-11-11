@@ -35,7 +35,7 @@ stream = JpegStream([(0,"camera")],resolution=(1920,1080),fps=10.0,data_dir="./d
 
 for i in range(20):
     frames = stream.next()
-    print(frames[0].stamp, frames[0].id)
+    print(frames[0].stamp, frames[0].number)
 ```
 
 ### Capture images as numpy arrays 
@@ -50,7 +50,7 @@ stream = NumpyStream([(0,"camera")],resolution=(1920,1080),fps=10.0)
 
 for i in range(20):
     frames = stream.next()
-    print(frames[0].stamp, frames[0].id)
+    print(frames[0].stamp, frames[0].number)
     cv2.imshow("Jepture image",frames[0].array);
 ```
 
