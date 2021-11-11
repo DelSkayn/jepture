@@ -148,10 +148,13 @@ ArgusStream::ArgusStream(
 }
 
 ArgusStream::~ArgusStream(){
-    this->i_capture_session->stopRepeat();
+    if (this->started){
+        this->i_capture_session->stopRepeat();
+    }
     this->i_capture_session->waitForIdle();
     for(uint32_t i = 0;i < cameras.size();i++){
         this->cameras[i]->i_stream->disconnect();
+
         if(this->cameras[i]->dma_buffer){
             NvBufferDestroy(this->cameras[i]->dma_buffer);
         }

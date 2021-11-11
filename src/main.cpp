@@ -32,7 +32,7 @@ PYBIND11_MODULE(jepture, m) {
                 Encodes and then writes frame directly to disk as jpeg files using nvidia's gpu accelerated jpeg encoder.
             )pbdoc")
         .def(py::init<std::vector<std::tuple<uint32_t,std::string> > , std::pair<uint32_t,uint32_t> , float , std::optional<uint32_t>,  std::string >(),
-                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = {}, py::arg("image_dir") = "./data",
+                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = std::optional<uint32_t>(), py::arg("image_dir") = "./data",
                 R"pbdoc(
                     Parameters
                     ----------
@@ -72,7 +72,7 @@ PYBIND11_MODULE(jepture, m) {
                 A stream of numpy arrays containing a image in ABGR format.
             )pbdoc")
         .def(py::init<std::vector<std::tuple<uint32_t,std::string> > , std::pair<uint32_t,uint32_t> , float , std::optional<uint32_t>>(),
-                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = {},
+                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = std::optional<uint32_t>(),
                 R"pbdoc(
                     Parameters
                     ----------

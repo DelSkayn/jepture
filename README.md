@@ -31,7 +31,7 @@ Cameras are identiefied with a unique incrementing id. The id is assigned by lib
 ```python
 from jepture import JpegStream
 
-stream = JpegStream([(0,"camera")],resolution=(1920,1080),fps=10.0,mode=0,data_dir="./data")
+stream = JpegStream([(0,"camera")],resolution=(1920,1080),fps=10.0,mode=0,image_dir="./data")
 
 for i in range(20):
     frames = stream.next()
