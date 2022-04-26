@@ -11,8 +11,10 @@ NumpyStream::NumpyStream(
         std::vector<std::tuple<uint32_t,std::string> > cameras, 
         std::pair<uint32_t,uint32_t> resolution, 
         float fps, 
-        std::optional<uint32_t> mode)
-    : ArgusStream(cameras,resolution,fps,mode)
+        std::optional<uint32_t> mode,
+        std::optional<std::unordered_map<std::string,double>> settings
+        )
+    : ArgusStream(cameras,resolution,fps,mode,settings)
 {
 
     this->transform_params = {};

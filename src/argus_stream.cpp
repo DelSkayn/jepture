@@ -29,11 +29,182 @@ uint32_t select_sensor_mode(std::vector<SensorMode*> & sensor_modes, float fps){
     throw std::runtime_error("Could not find a sensor mode which supports requested fps");
 }
 
+void ArgusStream::print_settings(){
+    auto i_request = interface_cast<IRequest>(this->request.get());
+    auto i_settings = interface_cast<IAutoControlSettings>(i_request->getAutoControlSettings());
+
+    auto isp_gain_range = i_settings->getIspDigitalGainRange();
+    std::cout << "Isp Digitial Gain Range:  min:" << isp_gain_range.min() << " max:" << isp_gain_range.max() << std::endl;
+
+    auto i_source_settings = interface_cast<ISourceSettings>(i_request->getSourceSettings());
+    std::cout << "Focus position:" << i_source_settings->getFocusPosition() << std::endl;
+    std::cout << "Aperture position:" << i_source_settings->getAperturePosition() << std::endl;
+    std::cout << "Aperture motor speed:" << i_source_settings->getApertureMotorSpeed() << std::endl;
+    std::cout << "Aperture F number:" << i_source_settings->getApertureFNumber() << std::endl;
+    auto gain_range = i_source_settings->getGainRange();
+    std::cout << "Gain range number: min:" << gain_range.min() << " max:" << gain_range.max() << std::endl;
+    auto exposure_range = i_source_settings->getExposureTimeRange();
+    std::cout << "Exposure time: min:" << exposure_range.min() << " max:" << exposure_range.max() << std::endl;
+    std::cout << "Optical Black enable:" << i_source_settings->getOpticalBlackEnable() << std::endl;
+    auto optical_black = i_source_settings->getOpticalBlack();
+    std::cout << "Optical Black r:" << optical_black.r() << " b:" << optical_black.b() << " g_even:" << optical_black.gEven() << "g_odd:" << optical_black.gOdd() << std::endl;
+
+    auto i_denoise = interface_cast<IDenoiseSettings>(this->request.get());
+    std::cout << "Denoise mode:";
+    auto denoise_mode = i_denoise->getDenoiseMode();
+    if (denoise_mode == DENOISE_MODE_OFF){
+        std::cout << "OFF" << std::endl;
+    }else if(denoise_mode == DENOISE_MODE_FAST){
+        std::cout << "FAST" << std::endl;
+    }else if(denoise_mode == DENOISE_MODE_HIGH_QUALITY){
+        std::cout << "HIGH QUALITY" << std::endl;
+    }else{
+        std::cout << "INVALID" << std::endl;
+    }
+
+    std::cout << "Denoise strength: " << i_denoise->getDenoiseStrength() << std::endl;
+}
+
+void ArgusStream::apply_settings(std::unordered_map<std::string,double> settings){
+    auto i_request = interface_cast<IRequest>(this->request.get());
+    auto i_settings = interface_cast<IAutoControlSettings>(i_request->getAutoControlSettings());
+
+    {
+        auto isp_gain_range = i_settings->getIspDigitalGainRange();
+        auto min_isp = settings.find("min_auto_isp_gain");
+        if(min_isp != settings.end()){
+            if (min_isp->second < isp_gain_range.min() || min_isp->second > isp_gain_range.max()){
+                auto stream = std::stringstream();
+                stream << "Invalid settings value `min_auto_isp_gain` value was: `" << min_isp->second 
+                    << "` valid range was allowed is `"<< isp_gain_range.min() << ".." << isp_gain_range.max() << "`.";
+                throw std::runtime_error(stream.str());
+            }
+            isp_gain_range.min() = min_isp->second;
+        }
+        auto max_isp = settings.find("max_auto_isp_gain");
+        if(max_isp != settings.end()){
+            if (max_isp->second < isp_gain_range.min() || max_isp->second > isp_gain_range.max()){
+                auto stream = std::stringstream();
+                stream << "Invalid settings value `max_auto_isp_gain` value was: `" << max_isp->second 
+                    << "` valid range was allowed is `"<< isp_gain_range.min() << ".." << isp_gain_range.max() << "`.";
+                throw std::runtime_error(stream.str());
+            }
+            isp_gain_range.max() = max_isp->second;
+        }
+        i_settings->setIspDigitalGainRange(isp_gain_range);
+    }
+
+    auto i_source_settings = interface_cast<ISourceSettings>(i_request->getSourceSettings());
+    {
+        auto gain_range = i_source_settings->getGainRange();
+        auto min_isp = settings.find("min_gain");
+        if(min_isp != settings.end()){
+            if (min_isp->second < gain_range.min() || min_isp->second > gain_range.max()){
+                auto stream = std::stringstream();
+                stream << "Invalid settings value `min_gain` value was: `" << min_isp->second 
+                    << "` valid range was allowed is `"<< gain_range.min() << ".." << gain_range.max() << "`.";
+                throw std::runtime_error(stream.str());
+            }
+            gain_range.min() = min_isp->second;
+        }
+        auto max_isp = settings.find("max_gain");
+        if(max_isp != settings.end()){
+            if (max_isp->second < gain_range.min() || max_isp->second > gain_range.max()){
+                auto stream = std::stringstream();
+                stream << "Invalid settings value `max_gain` value was: `" << max_isp->second 
+                    << "` valid range was allowed is `"<< gain_range.min() << ".." << gain_range.max() << "`.";
+                throw std::runtime_error(stream.str());
+            }
+            gain_range.max() = max_isp->second;
+        }
+        i_source_settings->setGainRange(gain_range);
+    }
+
+    {
+        auto exposure_range = i_source_settings->getExposureTimeRange();
+        auto min_exposure_time = settings.find("min_exposure_time");
+        if(min_exposure_time != settings.end()){
+            if (min_exposure_time->second < exposure_range.min() || min_exposure_time->second > exposure_range.max()){
+                auto stream = std::stringstream();
+                stream << "Invalid settings value `min_exposure_time` value was: `" << min_exposure_time->second 
+                    << "` valid range was allowed is `"<< exposure_range.min() << ".." << exposure_range.max() << "`.";
+                throw std::runtime_error(stream.str());
+            }
+            exposure_range.min() = min_exposure_time->second;
+        }
+        auto max_exposure_time = settings.find("max_exposure_time");
+        if(max_exposure_time != settings.end()){
+            if (max_exposure_time->second < exposure_range.min() || max_exposure_time->second > exposure_range.max()){
+                auto stream = std::stringstream();
+                stream << "Invalid settings value `max_exposure_time` value was: `" << max_exposure_time->second 
+                    << "` valid range was allowed is `"<< exposure_range.min() << ".." << exposure_range.max() << "`.";
+                throw std::runtime_error(stream.str());
+            }
+            exposure_range.max() = max_exposure_time->second;
+        }
+        i_source_settings->setExposureTimeRange(exposure_range);
+    }
+
+
+
+    {
+        auto optical_black = i_source_settings->getOpticalBlack();
+        bool should_set = false;
+        auto optical_black_r = settings.find("optical_black_r");
+        if(optical_black_r != settings.end()){
+            should_set = true;
+            optical_black.r() = optical_black_r->second;
+        }
+        auto optical_black_b = settings.find("optical_black_b");
+        if(optical_black_b != settings.end()){
+            should_set = true;
+            optical_black.b() = optical_black_b->second;
+        }
+        auto optical_black_g_even = settings.find("optical_black_g_even");
+        if(optical_black_g_even != settings.end()){
+            should_set = true;
+            optical_black.gEven() = optical_black_g_even->second;
+        }
+        auto optical_black_g_odd = settings.find("optical_black_g_odd");
+        if(optical_black_g_odd != settings.end()){
+            should_set = true;
+            optical_black.gOdd() = optical_black_g_odd->second;
+        }
+
+        if(should_set){
+            i_source_settings->setOpticalBlackEnable(true);
+            i_source_settings->setOpticalBlack(optical_black);
+        }
+    }
+
+    {
+        auto i_denoise = interface_cast<IDenoiseSettings>(this->request.get());
+        auto denoise = settings.find("denoise");
+        if(denoise != settings.end()){
+            if (denoise->second == 0){
+                i_denoise->setDenoiseMode(DENOISE_MODE_OFF);
+            }else if (denoise->second == 1){
+                i_denoise->setDenoiseMode(DENOISE_MODE_FAST);
+            }else if (denoise->second == 2){
+                i_denoise->setDenoiseMode(DENOISE_MODE_HIGH_QUALITY);
+            }else{
+                std::cout << "Invalid denoise mode: " << denoise->second << std::endl;
+            }
+        }
+        auto denoise_strength = settings.find("denoise_strength");
+        if(denoise_strength != settings.end()){
+            i_denoise->setDenoiseStrength(denoise_strength->second);
+        }
+    }
+
+}
+
 ArgusStream::ArgusStream(
         std::vector<std::tuple<uint32_t,std::string> > cameras, 
         std::pair<uint32_t,uint32_t> resolution, 
         float fps,
-        std::optional<uint32_t> mode){
+        std::optional<uint32_t> mode,
+        std::optional<std::unordered_map<std::string,double>> settings){
     this->resolution = Size2D<uint32_t>(resolution.first,resolution.second);
     this->fps = fps;
     this->provider.reset(CameraProvider::create());
@@ -76,9 +247,9 @@ ArgusStream::ArgusStream(
         throw std::runtime_error("Failed to create capture session.");
     }
 
-    UniqueObj<OutputStreamSettings> settings(i_capture_session->createOutputStreamSettings(STREAM_TYPE_EGL));
-    auto i_stream_settings = interface_cast<IOutputStreamSettings>(settings.get());
-    auto i_egl_stream_settings = interface_cast<IEGLOutputStreamSettings>(settings.get());
+    UniqueObj<OutputStreamSettings> stream_settings(i_capture_session->createOutputStreamSettings(STREAM_TYPE_EGL));
+    auto i_stream_settings = interface_cast<IOutputStreamSettings>(stream_settings.get());
+    auto i_egl_stream_settings = interface_cast<IEGLOutputStreamSettings>(stream_settings.get());
     if(!i_egl_stream_settings || !i_stream_settings){
         throw std::runtime_error("Failed to create stream settings");
     }
@@ -118,7 +289,7 @@ ArgusStream::ArgusStream(
 
         this->cameras.push_back(std::make_unique<CameraStream>());
 
-        this->cameras[i]->stream.reset(i_capture_session->createOutputStream(settings.get()));
+        this->cameras[i]->stream.reset(i_capture_session->createOutputStream(stream_settings.get()));
         auto i_stream = interface_cast<IEGLOutputStream>(this->cameras[i]->stream.get());
         if(!i_stream){
             throw std::runtime_error("failed to create stream for one of the cameras");
@@ -137,12 +308,17 @@ ArgusStream::ArgusStream(
     }
 
     auto i_source_settings = interface_cast<ISourceSettings>(i_request->getSourceSettings());
-    if(!i_request){
-        throw std::runtime_error("failed to create request for left camera");
+    if(!i_source_settings){
+        throw std::runtime_error("failed to create request for a camera");
     }
     i_source_settings->setSensorMode(sensor_modes.at(sensor_mode));
     i_source_settings->setFrameDurationRange(Range<uint64_t>(1e9/(double)fps));
 
+
+    if(settings){
+        this->apply_settings(*settings);
+    }
+    this->print_settings();
 
     this->started = false;
 }
@@ -171,10 +347,10 @@ std::vector<ArgusStreamOutput> ArgusStream::next(bool skip){
             throw std::runtime_error("failed to start capture request");
         }
         /*
-        for(uint32_t i = 0;i < this->cameras.size();i++){
-            this->cameras[i]->i_stream->waitUntilConnected();
-        }
-        */
+           for(uint32_t i = 0;i < this->cameras.size();i++){
+           this->cameras[i]->i_stream->waitUntilConnected();
+           }
+           */
     }
 
     for(uint32_t i = 0;i < this->cameras.size();i++){
@@ -196,8 +372,8 @@ std::vector<ArgusStreamOutput> ArgusStream::next(bool skip){
 
             if(!this->cameras[i]->dma_buffer){
                 this->cameras[i]->dma_buffer = native_buffer->createNvBuffer(this->cameras[i]->i_stream->getResolution(),
-                            NvBufferColorFormat_YUV420,
-                            NvBufferLayout_BlockLinear);
+                        NvBufferColorFormat_YUV420,
+                        NvBufferLayout_BlockLinear);
                 if(!this->cameras[i]->dma_buffer){
                     throw std::runtime_error("failed to create dma buffer");
                 }
@@ -215,4 +391,3 @@ std::vector<ArgusStreamOutput> ArgusStream::next(bool skip){
     }
     return res;
 }
-

@@ -31,8 +31,8 @@ PYBIND11_MODULE(jepture, m) {
 
                 Encodes and then writes frame directly to disk as jpeg files using nvidia's gpu accelerated jpeg encoder.
             )pbdoc")
-        .def(py::init<std::vector<std::tuple<uint32_t,std::string> > , std::pair<uint32_t,uint32_t> , float , std::optional<uint32_t>,  std::string >(),
-                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = std::optional<uint32_t>(), py::arg("image_dir") = "./data",
+        .def(py::init<std::vector<std::tuple<uint32_t,std::string> > , std::pair<uint32_t,uint32_t> , float , std::optional<uint32_t>,std::optional<std::unordered_map<std::string,double>>,  std::string >(),
+                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = std::optional<uint32_t>(),py::arg("settings") = std::optional<std::unordered_map<std::string,double>>() ,py::arg("image_dir") = "./data",
                 R"pbdoc(
                     Parameters
                     ----------
@@ -60,6 +60,44 @@ PYBIND11_MODULE(jepture, m) {
                         Skip writing the next frame
                 )pbdoc");
 
+    py::class_<JpegBytesStreamOutput>(m,"JpegBytesStreamOutput")
+        .def_readwrite("number",&JpegBytesStreamOutput::number)
+        .def_readwrite("time_stamp",&JpegBytesStreamOutput::time_stamp)
+        .def_readwrite("bytes",&JpegBytesStreamOutput::bytes);
+
+    py::class_<JpegBytesStream>(m,"JpegBytesStream", R"pbdoc(
+                A stream of jpegs.
+
+                Encodes and then writes returns the bytes of the encoded jpeg.
+            )pbdoc")
+        .def(py::init<std::vector<std::tuple<uint32_t,std::string> > , std::pair<uint32_t,uint32_t> , float , std::optional<uint32_t>,std::optional<std::unordered_map<std::string,double>>>(),
+                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = std::optional<uint32_t>(),py::arg("settings") = std::optional<std::unordered_map<std::string,double>>(),
+                R"pbdoc(
+                    Parameters
+                    ----------
+                    cameras : list
+                        A list of of tuples with respectively a camera id and a name for the camera
+                        Jpegs for a specific camera will writen to a directory with the name of the camera.
+                    resolution: tuple
+                        A tuple containing the capture image width and height in pixels.
+                    fps: float
+                        The target fps to capture frames at.
+                    mode: int, optional
+                        A sensor mode to use. If empty the implementation will select a sensor mode based on the target fps.
+                )pbdoc")
+        .def("next",&JpegBytesStream::next, py::arg("skip") = false,
+                R"pbdoc(
+                    Captures the next frame
+
+                    It is recommend to call this functions at least as often as the target fps to avoid missing frames.
+
+                    Parameters
+                    ----------
+                    skip: bool, optional
+                        Skip writing the next frame
+                )pbdoc");
+
+
 
     py::class_<NumpyStreamOutput>(m,"NumpyStreamOutput", R"pbdoc(
         The value returned by JpegsStream.next().
@@ -71,8 +109,8 @@ PYBIND11_MODULE(jepture, m) {
     py::class_<NumpyStream>(m,"NumpyStream", R"pbdoc(
                 A stream of numpy arrays containing a image in ABGR format.
             )pbdoc")
-        .def(py::init<std::vector<std::tuple<uint32_t,std::string> > , std::pair<uint32_t,uint32_t> , float , std::optional<uint32_t>>(),
-                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = std::optional<uint32_t>(),
+        .def(py::init<std::vector<std::tuple<uint32_t,std::string> > , std::pair<uint32_t,uint32_t> , float , std::optional<uint32_t>, std::optional<std::unordered_map<std::string,double>>>(),
+                py::arg("cameras"), py::arg("resolution"), py::arg("fps"), py::arg("mode") = std::optional<uint32_t>(),py::arg("settings") = std::optional<std::unordered_map<std::string,double>>(),
                 R"pbdoc(
                     Parameters
                     ----------

@@ -54,6 +54,9 @@ protected:
 
     ICaptureSession * i_capture_session;
 
+    void apply_settings(std::unordered_map<std::string,double> settings);
+    void print_settings();
+
     bool started;
 
 public:
@@ -61,7 +64,8 @@ public:
             std::vector<std::tuple<uint32_t,std::string> > cameras, 
             std::pair<uint32_t,uint32_t> resolution,
             float fps,
-            std::optional<uint32_t> mode);
+            std::optional<uint32_t> mode,
+            std::optional<std::unordered_map<std::string,double>> settings);
 
     virtual ~ArgusStream();
 
@@ -84,11 +88,36 @@ public:
             std::pair<uint32_t,uint32_t> resolution, 
             float fps, 
             std::optional<uint32_t> mode,
+            std::optional<std::unordered_map<std::string,double>> settings,
             std::string directory);
     ~JpegStream();
 
     
     std::vector<JpegStreamOutput> next(bool skip);
+};
+
+struct JpegBytesStreamOutput{
+    uint64_t number;
+    uint64_t time_stamp;
+    py::bytes bytes;
+};
+
+class JpegBytesStream: protected ArgusStream {
+    std::unique_ptr<NvJPEGEncoder> nv;
+    std::vector<fs::path> directories;
+    unsigned char * jpeg_buffer;
+    unsigned long jpeg_buffer_size;
+
+public:
+    JpegBytesStream(std::vector<std::tuple<uint32_t,std::string> > cameras, 
+            std::pair<uint32_t,uint32_t> resolution, 
+            float fps, 
+            std::optional<uint32_t> mode,
+            std::optional<std::unordered_map<std::string,double>> settings);
+    ~JpegBytesStream();
+
+    
+    std::vector<JpegBytesStreamOutput> next(bool skip);
 };
 
 struct NumpyStreamOutput{
@@ -107,7 +136,9 @@ public:
     NumpyStream(std::vector<std::tuple<uint32_t,std::string> > cameras, 
             std::pair<uint32_t,uint32_t> resolution, 
             float fps, 
-            std::optional<uint32_t> mode);
+            std::optional<uint32_t> mode,
+            std::optional<std::unordered_map<std::string,double>> settings
+            );
     ~NumpyStream();
 
     
