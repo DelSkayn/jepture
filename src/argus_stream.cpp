@@ -372,8 +372,8 @@ std::vector<ArgusStreamOutput> ArgusStream::next(bool skip){
 
             if(!this->cameras[i]->dma_buffer){
                 this->cameras[i]->dma_buffer = native_buffer->createNvBuffer(this->cameras[i]->i_stream->getResolution(),
-                        NvBufferColorFormat_YUV420,
-                        NvBufferLayout_BlockLinear);
+                        NVBUF_COLOR_FORMAT_YUV420,
+                        NVBUF_LAYOUT_BLOCK_LINEAR);
                 if(!this->cameras[i]->dma_buffer){
                     throw std::runtime_error("failed to create dma buffer");
                 }
